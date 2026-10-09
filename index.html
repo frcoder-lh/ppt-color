@@ -335,6 +335,58 @@ function hsvToHsl(h,s,v){s/=100;v/=100;const l=v*(1-s/2);const ss=(l===0||l===1)
 function contrast(a,b){const l1=luminance(a),l2=luminance(b),hi=Math.max(l1,l2),lo=Math.min(l1,l2);return (hi+0.05)/(lo+0.05);}
 const $=id=>document.getElementById(id);
 
+/* ============ 公用工具：toast / 弹窗 / 蒙版 / 复制色号 ============ */
+let toastTimer;
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),1600);}
+
+const POPS=["pickerPop","importPop","schemePop","historyPop"];
+function anyPopOpen(){ return POPS.some(id=>$(id).classList.contains("show")); }
+function openPop(id){
+  POPS.forEach(p=>{ if(p!==id) $(p).classList.remove("show"); });
+  $(id).classList.add("show"); $("popMask").classList.add("show");
+}
+function closePop(id){ $(id).classList.remove("show"); if(!anyPopOpen()) $("popMask").classList.remove("show"); }
+
+/* 关闭按钮统一：点 × 关闭所属弹窗（取色器走 closePicker，含自动保存） */
+document.querySelectorAll(".picker-close").forEach(el=>{
+  const id=el.closest(".picker-pop").id;
+  el.onclick=()=> id==="pickerPop" ? closePicker() : closePop(id);
+});
+/* 蒙版（弹窗外部）点击：关闭当前弹窗 */
+$("popMask").onclick=()=>{ if(editing>=0) closePicker(); else POPS.forEach(id=>{ if($(id).classList.contains("show")) closePop(id); }); };
+
+/* 开关按钮：点击切换弹窗，打开前先渲染 */
+function bindPopToggle(btnId,popId,render){
+  $(btnId).onclick=()=>{
+    if($(popId).classList.contains("show")) closePop(popId);
+    else { render&&render(); openPop(popId); }
+  };
+}
+
+let lastCopy=0;
+function copyHex(hex){
+  const h=hex.toUpperCase();
+  lastCopy=Date.now();
+  if(navigator.clipboard)navigator.clipboard.writeText(h).catch(()=>{});
+  toast("已复制 "+h);
+}
+/* 给任意色块绑定：右键 / 触屏长按 复制色号 */
+function bindCopy(el,getHex){
+  el.oncontextmenu=e=>{ e.preventDefault(); copyHex(getHex()); };
+  let timer=null;
+  el.addEventListener("pointerdown",e=>{
+    if(e.pointerType==="mouse") return;
+    timer=setTimeout(()=>{ copyHex(getHex()); if(navigator.vibrate)navigator.vibrate(15); },520);
+  });
+  ["pointerup","pointercancel","pointerleave"].forEach(ev=>
+    el.addEventListener(ev,()=>{ if(timer){clearTimeout(timer);timer=null;} },{passive:true})
+  );
+}
+
+bindPopToggle("schemeBtn","schemePop",renderScheme);
+bindPopToggle("historyBtn","historyPop",renderHistory);
+bindPopToggle("importBtn","importPop",renderCustomList);
+
 /* ============ 第一层映射：主色 + 方案 → 6 个色块 ============
    [0]背景文字 [1]主色文字 [2]点缀色文字 [3]背景 [4]主色 [5]点缀色 */
 const ROLES=["背景文字","主色文字","点缀色文字","背景","主色","点缀色"];
@@ -422,26 +474,6 @@ function applyTheme(blk){
 }
 
 /* ============ 渲染 & 同步 ============ */
-let lastCopy=0;
-function copyHex(hex){
-  const h=hex.toUpperCase();
-  lastCopy=Date.now();
-  if(navigator.clipboard)navigator.clipboard.writeText(h).catch(()=>{});
-  toast("已复制 "+h);
-}
-function copySlot(i){ copyHex(blocks[i]); }
-/* 给任意色块绑定：右键 / 触屏长按 复制色号 */
-function bindCopy(el,getHex){
-  el.oncontextmenu=e=>{ e.preventDefault(); copyHex(getHex()); };
-  let timer=null;
-  el.addEventListener("pointerdown",e=>{
-    if(e.pointerType==="mouse") return;
-    timer=setTimeout(()=>{ copyHex(getHex()); if(navigator.vibrate)navigator.vibrate(15); },520);
-  });
-  ["pointerup","pointercancel","pointerleave"].forEach(ev=>
-    el.addEventListener(ev,()=>{ if(timer){clearTimeout(timer);timer=null;} },{passive:true})
-  );
-}
 /* 色块内的角色名文字色：按色块底色取可读色 */
 function labelColor(c){
   const {h,s}=hexToHsl(c);
@@ -456,19 +488,9 @@ function renderSlots(){
      </div></div>`).join("");
   document.querySelectorAll(".slot").forEach(el=>{
     const i=+el.dataset.i;
-    /* 左键 / 短按：打开调色板 */
+    /* 左键 / 短按：打开调色板；右键 / 触屏长按：复制色号 */
     el.onclick=()=>{ if(Date.now()-lastCopy<500) return; openPicker(i); };
-    /* 右键：复制色号 */
-    el.oncontextmenu=e=>{ e.preventDefault(); copySlot(i); };
-    /* 触屏长按：复制色号 */
-    let timer=null;
-    el.addEventListener("pointerdown",e=>{
-      if(e.pointerType==="mouse") return;
-      timer=setTimeout(()=>{ copySlot(i); if(navigator.vibrate)navigator.vibrate(15); },520);
-    });
-    ["pointerup","pointercancel","pointerleave"].forEach(ev=>
-      el.addEventListener(ev,()=>{ if(timer){clearTimeout(timer);timer=null;} },{passive:true})
-    );
+    bindCopy(el,()=>blocks[i]);
   });
 }
 function contrastBadge(fg,bg){
@@ -508,29 +530,6 @@ function sync(){
 
 /* ============ 配色方案 / 历史 弹窗 ============ */
 function updateSchemeTag(){ $("schemeTag").textContent=schemeLabel(scheme); }
-function anyPopOpen(){ return ["pickerPop","importPop","schemePop","historyPop"].some(id=>$(id).classList.contains("show")); }
-function closePop(id){ $(id).classList.remove("show"); if(!anyPopOpen()) $("popMask").classList.remove("show"); }
-function openPop(id){
-  ["schemePop","historyPop","importPop","pickerPop"].forEach(p=>{ if(p!==id) $(p).classList.remove("show"); });
-  $(id).classList.add("show"); $("popMask").classList.add("show");
-}
-$("schemeBtn").onclick=()=>{
-  if($("schemePop").classList.contains("show")) closePop("schemePop");
-  else { renderScheme(); openPop("schemePop"); }
-};
-$("historyBtn").onclick=()=>{
-  if($("historyPop").classList.contains("show")) closePop("historyPop");
-  else { renderHistory(); openPop("historyPop"); }
-};
-/* 关闭按钮统一：点 × 关闭对应弹窗 */
-$("importClose").onclick=()=>closePop("importPop");
-$("schemeClose").onclick=()=>closePop("schemePop");
-$("historyClose").onclick=()=>closePop("historyPop");
-/* 点击蒙版（弹窗外部）关闭当前弹窗 */
-$("popMask").onclick=()=>{
-  if(editing>=0) closePicker();
-  else { ["importPop","schemePop","historyPop"].forEach(id=>{ if($(id).classList.contains("show")) closePop(id); }); }
-};
 
 /* ============ 取色器 ============ */
 let editing=-1,curH=210,curS=50,curV=50;
@@ -567,6 +566,8 @@ $("hueSlider").oninput=e=>{curH=+e.target.value;syncPickerUI();};
 $("hexInput").onchange=e=>{let v=e.target.value.trim();if(!v.startsWith("#"))v="#"+v;
   if(/^#[0-9a-fA-F]{6}$/.test(v)){const {h,s,l}=hexToHsl(v);const {s:vs,vv}=hslToHsv(h,s,l);curH=h;curS=vs;curV=vv;syncPickerUI();}};
 $("pickerClose").onclick=()=>closePicker();
+/* 取色预览色块：右键 / 触屏长按 复制当前色号 */
+bindCopy($("pickerPreview"),()=>$("hexInput").value);
 $("bigSwatch").onclick=()=>openPicker(4);
 /* 主色变化时方案面板预览需同步刷新 */
 
@@ -609,8 +610,9 @@ function renderPresets(){
     if(g.label==="自定义"&&!g.colors.length)return;
     const lab=document.createElement("div");lab.className="p-label";lab.textContent=g.label;box.appendChild(lab);
     g.colors.forEach(([name,hex])=>{
-      const c=document.createElement("div");c.className="pc";c.style.background=hex;c.title=(name?name+" ":"")+hex;
-      c.onclick=()=>{const {h,s,l}=hexToHsl(hex);const {s:vs,v}=hslToHsv(h,s,l);curH=h;curS=vs;curV=v;syncPickerUI();};
+      const c=document.createElement("div");c.className="pc";c.style.background=hex;c.title=(name?name+" ":"")+hex+"（右键 / 长按复制）";
+      c.onclick=()=>{ if(Date.now()-lastCopy<500) return; const {h,s,l}=hexToHsl(hex);const {s:vs,v}=hslToHsv(h,s,l);curH=h;curS=vs;curV=v;syncPickerUI(); };
+      bindCopy(c,()=>hex);
       box.appendChild(c);
     });
   });
@@ -631,7 +633,6 @@ function renderCustomList(){
     row.appendChild(del);box.appendChild(row);
   });
 }
-$("importBtn").onclick=()=>{renderCustomList();openPop("importPop");};
 $("importInput").onchange=e=>{
   const codes=e.target.value.match(/#?[0-9a-fA-F]{6}\b/g)||[];
   codes.map(c=>c.startsWith("#")?c:"#"+c).forEach(c=>{if(!customColors.includes(c))customColors.push(c);});
@@ -675,9 +676,6 @@ function renderHistory(){
     row.appendChild(del);box.appendChild(row);
   });
 }
-let toastTimer;
-function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),1600);}
-
 sync();renderHistory();
 </script>
 </body>

@@ -151,12 +151,12 @@
   }
 
   @media (max-width:880px){
-    html,body{height:100%;overflow:hidden}
+    html,body{min-height:100%;overflow-x:hidden}
     body{padding:12px 12px 16px;touch-action:manipulation}
-    .wrap{height:100%;display:flex;flex-direction:column;overflow:hidden;padding:0}
-    .main-grid{flex:1;min-height:0;overflow:hidden;flex-direction:column}
-    .main-grid .panel{flex:none;width:100%;overflow-y:auto}
-    .main-grid .preview-col{flex:1 1 auto;min-height:0;width:100%;overflow:hidden;max-height:52vh}
+    .wrap{min-height:calc(100vh - 28px);display:flex;flex-direction:column;padding:0}
+    .main-grid{flex:1;min-height:0;flex-direction:column;gap:10px}
+    .main-grid .panel{flex:none;width:100%}
+    .main-grid .preview-col{flex:1 1 auto;min-height:300px;width:100%;overflow:hidden;max-height:52vh}
     .layout-switch{margin:0 0 10px}
     .page-body{min-height:150px;gap:10px;padding:12px}
     .cover{min-height:180px;padding:28px 18px}
@@ -211,7 +211,7 @@
     <div class="sub">主色 + 方案 → 6 个色块 → 预览区各元素颜色（两层映射）</div>
     <div class="control-row">
       <div class="big-swatch" id="bigSwatch" title="点击选择主色"></div>
-      <button class="btn ghost scheme-btn" id="schemeBtn">配色方案<span class="scheme-tag" id="schemeTag"></span><span class="arrow">▾</span></button>
+      <button class="btn ghost scheme-btn" id="schemeBtn">配色<span class="scheme-tag" id="schemeTag"></span><span class="arrow">▾</span></button>
       <button class="btn ghost" id="importBtn">导入</button>
       <button class="btn ghost" id="exportBtn">导出</button>
       <button class="btn ghost" id="historyBtn">历史</button>

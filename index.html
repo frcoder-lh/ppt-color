@@ -133,7 +133,7 @@
   .custom-list{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;max-height:180px;overflow-y:auto;align-content:start}
   .custom-row{display:flex;align-items:center;gap:10px;font-size:13px}
   .custom-row .sw{width:22px;height:22px;border-radius:5px;border:1px solid rgba(0,0,0,.1);flex:none}
-  .custom-row .hx{flex:1;font-family:monospace}
+  .custom-row .hx{flex:0 0 auto;font-family:monospace}
   .custom-row .del{border:none;background:transparent;color:#c0bdae;cursor:pointer;font-size:16px}
   .custom-row .del:hover{color:#c8553d}
 
@@ -615,8 +615,7 @@ function renderCustomList(){
     row.appendChild(del);box.appendChild(row);
   });
 }
-$("importBtn").onclick=()=>{$("importPop").classList.add("show");renderCustomList();};
-$("importClose").onclick=()=>$("importPop").classList.remove("show");
+$("importBtn").onclick=()=>{renderCustomList();openPop("importPop");};
 $("importInput").onchange=e=>{
   const codes=e.target.value.match(/#?[0-9a-fA-F]{6}\b/g)||[];
   codes.map(c=>c.startsWith("#")?c:"#"+c).forEach(c=>{if(!customColors.includes(c))customColors.push(c);});

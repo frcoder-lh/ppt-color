@@ -137,7 +137,7 @@
   .custom-row .del{border:none;background:transparent;color:#c0bdae;cursor:pointer;font-size:16px}
   .custom-row .del:hover{color:#c8553d}
 
-  .toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 22px;border-radius:24px;font-size:14px;opacity:0;transition:.25s;pointer-events:none}
+  .toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 22px;border-radius:24px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:60}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
   @media (max-width:600px){
@@ -190,7 +190,7 @@
     #importPop .import-body{flex:1;min-height:0;flex-direction:row;align-items:stretch}
     #importPop #importInput{flex:1;height:auto;min-height:260px;resize:none}
     #importPop .custom-list{flex:1;margin-top:0;max-height:none;grid-template-columns:repeat(3,1fr)}
-    #schemePop #schemePanel{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:1fr;row-gap:24px;align-content:start}
+    #schemePop #schemePanel{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:1fr;row-gap:24px;align-content:start;padding:6px 4px}
     #schemePop .sg{margin-bottom:0;gap:20px}
     #schemePop .sg-label{width:84px;font-size:14px}
     #schemePop .sg-cells{gap:16px}

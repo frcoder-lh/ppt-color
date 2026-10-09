@@ -180,28 +180,23 @@
     .wrap{min-height:calc(100vh - 72px);display:flex;flex-direction:column;justify-content:center}
     .main-grid{height:420px}
     .main-grid .panel{overflow-y:auto}
-    #pickerPop{width:min(1060px,94vw);height:min(88vh,840px);max-height:92vh;display:flex;flex-direction:column}
-    #pickerPop .picker-head{flex:none}
+    #pickerPop,#importPop,#schemePop,#historyPop{width:min(960px,94vw);height:min(84vh,800px);max-height:92vh;display:flex;flex-direction:column}
+    #pickerPop .picker-head,#importPop .picker-head,#schemePop .picker-head,#historyPop .picker-head{flex:none}
     #pickerPop .picker-body{flex:1;min-height:0;flex-direction:row}
     #pickerPop .pk-left{flex:1;min-width:0;display:flex;flex-direction:column}
     #pickerPop .sv-pad{flex:1;height:auto;min-height:300px}
     #pickerPop .pk-right{flex:1;min-width:0;display:flex;flex-direction:column}
     #pickerPop .presets{flex:1;max-height:none;overflow-y:auto;grid-template-columns:repeat(auto-fill,minmax(30px,1fr));gap:4px;margin-top:0;padding-right:4px;align-content:start}
-    #importPop{width:min(960px,94vw);height:min(82vh,780px);max-height:90vh;display:flex;flex-direction:column}
-    #importPop .picker-head{flex:none}
     #importPop .import-body{flex:1;min-height:0;flex-direction:row;align-items:stretch}
     #importPop #importInput{flex:1;height:auto;min-height:260px;resize:none}
     #importPop .custom-list{flex:1;margin-top:0;max-height:none;grid-template-columns:repeat(3,1fr)}
-    #schemePop{width:min(920px,94vw)}
-    #schemePop #schemePanel{display:grid;grid-template-columns:1fr 1fr;column-gap:32px;row-gap:24px}
+    #schemePop #schemePanel{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;column-gap:32px;row-gap:24px;align-content:start}
     #schemePop .sg{margin-bottom:0}
     #schemePop .sg-label{width:64px;font-size:13px}
     #schemePop .sg-cells{gap:12px}
     #schemePop .scell .two{width:48px;height:38px}
     #schemePop .scell .sname{font-size:11px}
-    #historyPop{width:min(780px,92vw);height:min(78vh,720px);max-height:90vh;display:flex;flex-direction:column}
-    #historyPop .picker-head{flex:none}
-    #historyPop .history-list{flex:1;min-height:0;max-height:none}
+    #historyPop .history-list{flex:1;min-height:0;max-height:none;overflow-y:auto}
   }
 </style>
 </head>

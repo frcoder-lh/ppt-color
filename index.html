@@ -190,12 +190,12 @@
     #importPop .import-body{flex:1;min-height:0;flex-direction:row;align-items:stretch}
     #importPop #importInput{flex:1;height:auto;min-height:260px;resize:none}
     #importPop .custom-list{flex:1;margin-top:0;max-height:none;grid-template-columns:repeat(3,1fr)}
-    #schemePop #schemePanel{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;column-gap:32px;row-gap:24px;align-content:start}
-    #schemePop .sg{margin-bottom:0}
-    #schemePop .sg-label{width:64px;font-size:13px}
-    #schemePop .sg-cells{gap:12px}
-    #schemePop .scell .two{width:48px;height:38px}
-    #schemePop .scell .sname{font-size:11px}
+    #schemePop #schemePanel{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:1fr;row-gap:24px;align-content:start}
+    #schemePop .sg{margin-bottom:0;gap:20px}
+    #schemePop .sg-label{width:84px;font-size:14px}
+    #schemePop .sg-cells{gap:16px}
+    #schemePop .scell .two{width:84px;height:64px}
+    #schemePop .scell .sname{font-size:12px}
     #historyPop .history-list{flex:1;min-height:0;max-height:none;overflow-y:auto}
   }
 </style>
@@ -423,11 +423,24 @@ function applyTheme(blk){
 
 /* ============ 渲染 & 同步 ============ */
 let lastCopy=0;
-function copySlot(i){
-  const hex=blocks[i].toUpperCase();
+function copyHex(hex){
+  const h=hex.toUpperCase();
   lastCopy=Date.now();
-  if(navigator.clipboard)navigator.clipboard.writeText(hex).catch(()=>{});
-  toast("已复制 "+hex);
+  if(navigator.clipboard)navigator.clipboard.writeText(h).catch(()=>{});
+  toast("已复制 "+h);
+}
+function copySlot(i){ copyHex(blocks[i]); }
+/* 给任意色块绑定：右键 / 触屏长按 复制色号 */
+function bindCopy(el,getHex){
+  el.oncontextmenu=e=>{ e.preventDefault(); copyHex(getHex()); };
+  let timer=null;
+  el.addEventListener("pointerdown",e=>{
+    if(e.pointerType==="mouse") return;
+    timer=setTimeout(()=>{ copyHex(getHex()); if(navigator.vibrate)navigator.vibrate(15); },520);
+  });
+  ["pointerup","pointercancel","pointerleave"].forEach(ev=>
+    el.addEventListener(ev,()=>{ if(timer){clearTimeout(timer);timer=null;} },{passive:true})
+  );
 }
 /* 色块内的角色名文字色：按色块底色取可读色 */
 function labelColor(c){
@@ -479,7 +492,8 @@ function renderScheme(){
       c.dataset.v=v;
       c.innerHTML=`<div class="two"><i class="top" style="background:${primary}"></i><i class="bot" style="background:${acc}"></i></div>
                    <div class="sname">${sname}</div>`;
-      c.onclick=()=>{scheme=v;closePop("schemePop");sync();toast("方案："+schemeLabel(v));};
+      c.onclick=()=>{ if(Date.now()-lastCopy<500) return; scheme=v;closePop("schemePop");sync();toast("方案："+schemeLabel(v)); };
+      bindCopy(c.querySelector(".two"),()=>acc);
       cells.appendChild(c);
     });
     g.appendChild(lab);g.appendChild(cells);p.appendChild(g);
@@ -610,6 +624,8 @@ function renderCustomList(){
   customColors.forEach((hex,idx)=>{
     const row=document.createElement("div");row.className="custom-row";
     row.innerHTML=`<span class="sw" style="background:${hex}"></span><span class="hx">${hex.toUpperCase()}</span>`;
+    const sw=row.querySelector(".sw");sw.title="右键 / 长按复制色号";
+    bindCopy(sw,()=>hex);
     const del=document.createElement("button");del.className="del";del.textContent="×";
     del.onclick=()=>{customColors.splice(idx,1);saveCustom();renderCustomList();renderPresets();};
     row.appendChild(del);box.appendChild(row);

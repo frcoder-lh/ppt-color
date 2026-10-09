@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PPT 配色方案生成器</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='18' height='18' rx='4' fill='%233a6ea5'/%3E%3Ccircle cx='9' cy='9' r='3' fill='%23d98b6a'/%3E%3Ccircle cx='15' cy='15' r='3' fill='%23eef2f6'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#eceae3; --panel:#fff; --line:#d8d4c8; --ink:#26282e; --muted:#8a8778;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);padding:24px 16px 48px}
+  .wrap{max-width:1200px;margin:0 auto}
+  h1{font-size:20px;font-weight:700;margin-bottom:6px}
+  .sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+
+  .main-grid{display:flex;gap:22px;align-items:stretch}
+  .main-grid .panel{flex:1 1 0;min-width:0}
+  .main-grid .preview-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .main-grid .preview-col .layout-switch{margin:0 0 14px}
+  .main-grid .preview-col .browser{flex:1;display:flex;flex-direction:column}
+  .main-grid .browser .slide{flex:1;display:flex;flex-direction:column}
+  .main-grid .browser .slide[hidden]{display:none}
+  .main-grid .browser .page-body{flex:1}
+  .main-grid .browser .cover{flex:1}
+  .main-grid .browser .split{flex:1}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .control-row{display:flex;gap:8px;align-items:stretch;flex-wrap:nowrap}
+  .big-swatch{width:60px;min-width:60px;height:44px;border-radius:10px;flex:none;border:2px solid #fff;outline:2px solid var(--line);cursor:pointer;transition:transform .12s}
+  .big-swatch:hover{transform:scale(1.04)}
+  .scheme-select{flex:1;min-width:0;height:44px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:#faf9f5;font-size:14px;cursor:pointer}
+  #schemePop{width:340px}
+  #schemePop .sg-label{width:64px}
+  #historyPop{width:320px}
+  #historyPop .clear-all{display:block;margin:0 0 10px auto}
+  #historyPop .history-empty{font-size:13px;color:#b5b2a4;padding:8px 2px}
+  .sg{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .sg:last-child{margin-bottom:0}
+  .sg-label{width:70px;font-size:12px;color:var(--muted);flex:none}
+  .sg-cells{display:flex;gap:10px}
+  .scell{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer}
+  .scell .two{width:46px;height:40px;border-radius:8px;overflow:hidden;border:1px solid rgba(0,0,0,.12);display:flex;flex-direction:column;transition:transform .1s}
+  .scell .two .top{flex:1}
+  .scell .two .bot{flex:1}
+  .scell:hover .two{transform:scale(1.05)}
+  .scell.active .two{outline:3px solid var(--ink)}
+  .scell .sname{font-size:11px;color:var(--muted)}
+  .scell.active .sname{color:var(--ink);font-weight:600}
+  .btn{height:44px;padding:0 14px;border:none;border-radius:10px;font-size:14px;cursor:pointer;white-space:nowrap;flex:none}
+  .btn.primary{background:var(--ink);color:#fff}
+  .btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+  .btn:hover{opacity:.85}
+  .btn.scheme-btn{display:inline-flex;align-items:center;gap:6px}
+  .btn.scheme-btn .arrow{font-size:10px;color:var(--muted);transition:transform .2s}
+  .btn.scheme-btn.open .arrow{transform:rotate(180deg)}
+  .scheme-tag{font-size:12px;color:var(--muted);font-weight:400;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:24px}
+  .slot{text-align:center;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  .slot .chip{height:78px;border-radius:10px;border:2px solid #fff;outline:2px solid var(--line);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px;overflow:hidden}
+  .slot .chip .c-role{font-size:12px;font-weight:600;letter-spacing:.5px;line-height:1.2}
+  .slot .chip .c-hex{font-size:10px;font-family:monospace;opacity:.9;line-height:1.2}
+  .slot .chip .c-ctr{font-size:10px;font-family:monospace;opacity:.9;line-height:1.2}
+  .slot-hint{font-size:11px;color:#b5b2a4;margin-top:12px}
+
+  .history{margin-top:22px}
+  .history summary{font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;letter-spacing:1px;list-style:none;display:flex;align-items:center}
+  .history summary::before{content:"▸ ";}
+  .history details[open] summary::before{content:"▾ ";}
+  .hcount{color:#aaa;font-weight:400;margin-left:6px}
+  .clear-all{margin-left:auto;font-size:12px;border:1px solid var(--line);background:#fff;color:#888;border-radius:10px;padding:4px 12px;cursor:pointer;line-height:1}
+  .clear-all:hover{color:#c8553d;border-color:#c8553d}
+  .history-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;margin-top:10px;max-height:220px;overflow-y:auto;padding-right:4px;align-content:start}
+  .history-empty{font-size:13px;color:#b5b2a4;padding:8px 2px}
+  .history-item{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;background:#faf9f5}
+  .history-item:hover{background:#f1efe7}
+  .history-item .mini{display:flex;gap:4px}
+  .history-item .mini span{width:20px;height:20px;border-radius:5px;border:1px solid rgba(0,0,0,.08)}
+  .history-item .hname{flex:1;font-size:14px}
+  .history-item .htag{font-size:11px;color:var(--muted)}
+  .history-item .del{border:none;background:transparent;color:#c0bdae;font-size:16px;cursor:pointer;padding:2px 6px}
+
+  /* 版式切换 */
+  .layout-switch{display:flex;gap:8px;margin:30px 0 12px;flex-wrap:wrap}
+  .lay-btn{padding:7px 16px;border:1px solid var(--line);background:#fff;border-radius:18px;font-size:13px;cursor:pointer;color:var(--muted)}
+  .lay-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .browser{border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.06)}
+  .slide[hidden]{display:none}
+  .nav{display:flex;align-items:center;padding:12px 16px;gap:8px}
+  .nav .brand{font-weight:700;font-size:14px;margin-right:10px;white-space:nowrap}
+  .nav-item{flex:1;text-align:center;font-size:13px;padding:5px 6px;border-radius:14px}
+  .page-body{display:flex;gap:16px;padding:18px;min-height:210px}
+  .card{flex:1;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px}
+  .card-title{font-size:15px;font-weight:700}
+  .card-title .pill{display:inline-block;padding:3px 14px;border-radius:20px}
+  .card p{font-size:13px;line-height:1.8}
+  .footer{padding:14px 18px;font-size:12px;display:flex;justify-content:space-between}
+  .cover{padding:48px 28px;min-height:300px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+  .cover h2{font-size:34px;font-weight:800;letter-spacing:2px;margin-bottom:14px}
+  .cover .sub2{font-size:15px;opacity:.8;max-width:70%}
+  .cover .blob{position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%}
+  .split{display:flex;min-height:260px}
+  .split .aside{width:38%;padding:24px;display:flex;flex-direction:column;gap:12px;justify-content:center}
+  .split .main{flex:1;padding:24px;display:flex;flex-direction:column;gap:14px}
+  .split .main .line{height:12px;border-radius:6px;width:80%}
+  .split .main .line.short{width:55%}
+
+  /* 取色器 */
+  .picker-pop{position:fixed;z-index:50;left:50%;top:50%;transform:translate(-50%,-50%) scale(.96);width:280px;max-width:calc(100vw - 32px);max-height:88vh;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);opacity:0;pointer-events:none;transition:.15s}
+  .picker-pop.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  .picker-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;font-weight:600}
+  .picker-close{cursor:pointer;font-size:20px;color:#999;padding:0 4px}
+  .sv-pad{position:relative;height:140px;border-radius:8px;cursor:crosshair;background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(210,100%,50%))}
+  .sv-thumb{position:absolute;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.5);transform:translate(-50%,-50%);pointer-events:none}
+  #hueSlider{width:100%;margin:12px 0 6px;-webkit-appearance:none;height:10px;border-radius:5px;background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+  #hueSlider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid #999;cursor:pointer}
+  .picker-foot{display:flex;align-items:center;gap:10px;margin-top:8px}
+  .picker-preview{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);flex:none}
+  #hexInput{flex:1;height:34px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font-family:monospace;font-size:14px}
+  .presets{margin-top:12px;display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
+  .presets .pc{aspect-ratio:1;border-radius:6px;cursor:pointer;border:1px solid rgba(0,0,0,.1)}
+  .presets .pc:hover{transform:scale(1.12);outline:2px solid var(--ink)}
+  .presets .p-label{grid-column:1/-1;font-size:11px;color:var(--muted);margin:2px 0 -2px}
+  .picker-body{display:flex;flex-direction:column;gap:14px}
+  .pk-right{width:100%}
+  .import-body{display:flex;flex-direction:column;gap:12px}
+  #importInput{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:monospace;font-size:13px;resize:vertical}
+  .custom-list{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;max-height:180px;overflow-y:auto;align-content:start}
+  .custom-row{display:flex;align-items:center;gap:10px;font-size:13px}
+  .custom-row .sw{width:22px;height:22px;border-radius:5px;border:1px solid rgba(0,0,0,.1);flex:none}
+  .custom-row .hx{flex:1;font-family:monospace}
+  .custom-row .del{border:none;background:transparent;color:#c0bdae;cursor:pointer;font-size:16px}
+  .custom-row .del:hover{color:#c8553d}
+
+  .toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 22px;border-radius:24px;font-size:14px;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:600px){
+    .control-row{flex-wrap:wrap}
+    .scheme-select{font-size:16px;height:44px}
+    .btn{height:44px;padding:0 12px;font-size:13px}
+    .btn.scheme-btn{flex:1;min-width:0}
+    .scheme-tag{display:none}
+    .slots{grid-template-columns:repeat(3,1fr);gap:8px}
+    .slot .chip{height:70px}
+    .page-body{gap:10px;padding:12px}
+    .card{padding:12px}
+  }
+
+  @media (max-width:880px){
+    html,body{height:100%;overflow:hidden}
+    body{padding:12px 12px 16px;touch-action:manipulation}
+    .wrap{height:100%;display:flex;flex-direction:column;overflow:hidden;padding:0}
+    .main-grid{flex:1;min-height:0;overflow:hidden;flex-direction:column}
+    .main-grid .panel{flex:none;width:100%;overflow-y:auto}
+    .main-grid .preview-col{flex:1;min-height:0;width:100%;overflow:hidden}
+    .layout-switch{margin:0 0 10px}
+    .page-body{min-height:150px;gap:10px;padding:12px}
+    .cover{min-height:180px;padding:28px 18px}
+    .cover h2{font-size:24px}
+    .cover .sub2{font-size:13px;max-width:80%}
+    .cover .blob{width:110px;height:110px;right:-26px;top:-26px}
+    .split{min-height:170px}
+    .split .aside{width:44%;padding:16px}
+    .split .aside .pill{white-space:nowrap}
+    .card{padding:12px}
+    .card p{font-size:12px}
+    .picker-pop, #schemePop, #historyPop{width:calc(100vw - 24px);max-width:540px;max-height:92vh}
+    .picker-body{flex-direction:column}
+    .import-body{flex-direction:column}
+    .pk-right{width:100%}
+  }
+
+  @media (min-width:881px){
+    .wrap{min-height:calc(100vh - 72px);display:flex;flex-direction:column;justify-content:center}
+    .main-grid{height:420px}
+    .main-grid .panel{overflow-y:auto}
+    #pickerPop{width:min(1060px,94vw);height:min(88vh,840px);max-height:92vh;display:flex;flex-direction:column}
+    #pickerPop .picker-head{flex:none}
+    #pickerPop .picker-body{flex:1;min-height:0;flex-direction:row}
+    #pickerPop .pk-left{flex:1;min-width:0;display:flex;flex-direction:column}
+    #pickerPop .sv-pad{flex:1;height:auto;min-height:300px}
+    #pickerPop .pk-right{flex:1;min-width:0;display:flex;flex-direction:column}
+    #pickerPop .presets{flex:1;max-height:none;overflow-y:auto;grid-template-columns:repeat(auto-fill,minmax(30px,1fr));gap:4px;margin-top:0;padding-right:4px;align-content:start}
+    #importPop{width:min(960px,94vw);height:min(82vh,780px);max-height:90vh;display:flex;flex-direction:column}
+    #importPop .picker-head{flex:none}
+    #importPop .import-body{flex:1;min-height:0;flex-direction:row;align-items:stretch}
+    #importPop #importInput{flex:1;height:auto;min-height:260px;resize:none}
+    #importPop .custom-list{flex:1;margin-top:0;max-height:none;grid-template-columns:repeat(3,1fr)}
+    #schemePop{width:min(920px,94vw)}
+    #schemePop #schemePanel{display:grid;grid-template-columns:1fr 1fr;column-gap:32px;row-gap:24px}
+    #schemePop .sg{margin-bottom:0}
+    #schemePop .sg-label{width:64px;font-size:13px}
+    #schemePop .sg-cells{gap:12px}
+    #schemePop .scell .two{width:48px;height:38px}
+    #schemePop .scell .sname{font-size:11px}
+    #historyPop{width:min(780px,92vw);height:min(78vh,720px);max-height:90vh;display:flex;flex-direction:column}
+    #historyPop .picker-head{flex:none}
+    #historyPop .history-list{flex:1;min-height:0;max-height:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="main-grid">
+  <div class="panel">
+    <h1>PPT 配色方案生成器</h1>
+    <div class="sub">主色 + 方案 → 6 个色块 → 预览区各元素颜色（两层映射）</div>
+    <div class="control-row">
+      <div class="big-swatch" id="bigSwatch" title="点击选择主色"></div>
+      <button class="btn ghost scheme-btn" id="schemeBtn">配色方案<span class="scheme-tag" id="schemeTag"></span><span class="arrow">▾</span></button>
+      <button class="btn ghost" id="importBtn">导入</button>
+      <button class="btn ghost" id="exportBtn">导出</button>
+      <button class="btn ghost" id="historyBtn">历史</button>
+    </div>
+    <div class="slots" id="slots"></div>
+    <div class="slot-hint">色块：左键点击打开调色板 · 右键 / 长按复制色号</div>
+  </div>
+
+  <div class="preview-col">
+  <div class="layout-switch" id="layoutSwitch">
+    <button class="lay-btn active" data-lay="A">标准版</button>
+    <button class="lay-btn" data-lay="B">封面页</button>
+    <button class="lay-btn" data-lay="C">左栏页</button>
+  </div>
+
+  <div class="browser">
+    <div class="slide" id="slideA">
+      <div class="nav" id="navA">
+        <span class="brand">品牌</span>
+        <span class="nav-item">导航1</span><span class="nav-item">导航2</span>
+        <span class="nav-item">导航3</span><span class="nav-item">导航4</span><span class="nav-item">导航5</span>
+      </div>
+      <div class="page-body">
+        <div class="card shape-card">
+          <div class="card-title"><span class="pill">形状标题</span></div>
+          <p>形状无边框、有背景（主色），文字采用主色文字色。这里是形状里的正文内容。</p>
+        </div>
+        <div class="card box-card">
+          <div class="card-title"><span class="pill">文本框标题</span></div>
+          <p>文本框无背景、透明，边框用主色，文字用背景文字色。这里是文本框里的正文。</p>
+        </div>
+      </div>
+      <div class="footer"><span>页尾 · 版权信息</span><span>关于 / 联系</span></div>
+    </div>
+
+    <div class="slide" id="slideB" hidden>
+      <div class="cover">
+        <div class="blob"></div>
+        <h2>封面标题示例</h2>
+        <div class="sub2">副标题说明文字，整页背景采用背景色，标题与副标题采用背景文字色，装饰圆采用点缀色。</div>
+      </div>
+    </div>
+
+    <div class="slide" id="slideC" hidden>
+      <div class="split">
+        <div class="aside">
+          <div class="card-title"><span class="pill">侧栏标题</span></div>
+          <p>侧栏采用主色背景，文字采用主色文字色。</p>
+        </div>
+        <div class="main">
+          <div class="card-title"><span class="pill">正文标题</span></div>
+          <div class="line"></div><div class="line"></div><div class="line short"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  </div>
+</div>
+
+<div class="picker-pop" id="pickerPop">
+  <div class="picker-head"><span id="pickerTitle">选择颜色</span><span class="picker-close" id="pickerClose">×</span></div>
+  <div class="picker-body">
+    <div class="pk-left">
+      <div class="sv-pad" id="svPad"><div class="sv-thumb" id="svThumb"></div></div>
+      <input type="range" id="hueSlider" min="0" max="360" value="210">
+      <div class="picker-foot">
+        <span class="picker-preview" id="pickerPreview"></span>
+        <input type="text" id="hexInput" spellcheck="false">
+      </div>
+    </div>
+    <div class="pk-right"><div class="presets" id="presets"></div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="picker-pop" id="importPop">
+  <div class="picker-head"><span>导入色号</span><span class="picker-close" id="importClose">×</span></div>
+  <div class="import-body">
+    <textarea id="importInput" rows="3" placeholder="粘贴色号，换行或逗号分隔，如 #C3272B, #2980B9"></textarea>
+    <div class="custom-list" id="customList"></div>
+  </div>
+</div>
+
+<div class="picker-pop" id="schemePop">
+  <div class="picker-head"><span>配色方案</span><span class="picker-close" id="schemeClose">×</span></div>
+  <div id="schemePanel"></div>
+</div>
+
+<div class="picker-pop" id="historyPop">
+  <div class="picker-head"><span>历史方案保存区 <span id="historyCount" class="hcount"></span></span><span class="picker-close" id="historyClose">×</span></div>
+  <button class="clear-all" id="clearHistory" title="清空全部历史">一键清除</button>
+  <div class="history-list" id="historyList"></div>
+</div>
+
+<script>
+/* ============ 颜色工具 ============ */
+function hexToHsl(hex){
+  let r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h=0,s=0;const l=(mx+mn)/2;
+  if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);
+    if(mx===r)h=(g-b)/d+(g<b?6:0);else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h/=6;}
+  return {h:h*360,s:s*100,l:l*100};
+}
+function hslToHex(h,s,l){
+  h=((h%360)+360)%360;s=Math.max(0,Math.min(100,s))/100;l=Math.max(0,Math.min(100,l))/100;
+  const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs(((h/60)%2)-1)),m=l-c/2;
+  let r=0,g=0,b=0;
+  if(h<60){r=c;g=x;}else if(h<120){r=x;g=c;}else if(h<180){g=c;b=x;}
+  else if(h<240){g=x;b=c;}else if(h<300){r=x;b=c;}else{r=c;b=x;}
+  const t=v=>Math.round((v+m)*255).toString(16).padStart(2,"0");
+  return "#"+t(r)+t(g)+t(b);
+}
+function luminance(hex){
+  const r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  const f=c=>c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);
+  return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b);
+}
+function hslToHsv(h,s,l){s/=100;l/=100;const v=l+s*Math.min(l,1-l);const ss=v===0?0:2*(1-l/v);return {s:ss*100,v:v*100};}
+function hsvToHsl(h,s,v){s/=100;v/=100;const l=v*(1-s/2);const ss=(l===0||l===1)?0:(v-l)/Math.min(l,1-l);return {s:ss*100,l:l*100};}
+function contrast(a,b){const l1=luminance(a),l2=luminance(b),hi=Math.max(l1,l2),lo=Math.min(l1,l2);return (hi+0.05)/(lo+0.05);}
+const $=id=>document.getElementById(id);
+
+/* ============ 第一层映射：主色 + 方案 → 6 个色块 ============
+   [0]背景文字 [1]主色文字 [2]点缀色文字 [3]背景 [4]主色 [5]点缀色 */
+const ROLES=["背景文字","主色文字","点缀色文字","背景","主色","点缀色"];
+let primary="#3a6ea5";
+let scheme="mono-mid";
+let blocks=[];
+
+const TIERS={neg2:{ang:-30,step:0.5,label:"负向浓"},neg1:{ang:-15,step:0.75,label:"负向"},mid:{ang:0,step:1,label:"标准"},pos1:{ang:15,step:1.25,label:"正向"},pos2:{ang:30,step:1.5,label:"正向浓"}};
+const MONO_STEP={neg2:0.55,neg1:0.78,mid:1,pos1:1.25,pos2:1.5}; /* 单色无方向性，仅改明暗浓淡，可不对称 */
+/* 计算某方案的点缀色（供面板预览 & 派生共用）：5 档，含正负方向 */
+function accentOf(p,sch){
+  const {h,s,l}=hexToHsl(p);
+  const [base,strength]=(sch||"mono-mid").split("-");
+  const tier=TIERS[strength]||TIERS.mid;
+  const step=base==="mono"?(MONO_STEP[strength]||1):tier.step;
+  const dir=tier.ang;
+  let ah=h;
+  if(base==="split") ah=(h+150+dir)%360;
+  else if(base==="analogous") ah=(h+30+dir)%360;
+  else if(base==="triadic") ah=(h+120+dir)%360;
+  const sat=Math.min(s*0.9*step,95);
+  const lit=Math.min(l+40*step,85);
+  return hslToHex(ah,sat,lit);
+}
+
+/* 文字色：在给定底色上，取能保证对比度≥10 的近黑/近白（同色相）
+   二分找到仍保留色彩明度下最高的对比侧；中间明度底色数学上无法≥10 时取最高可能 */
+function textOn(bg,hue,sat){
+  const darkOK=contrast(hslToHex(hue,sat,0),bg)>=10;
+  const lightOK=contrast(hslToHex(hue,sat,100),bg)>=10;
+  let dL,lL;
+  if(darkOK){
+    let lo=0,hi=40;
+    for(let i=0;i<14;i++){const m=(lo+hi)/2; if(contrast(hslToHex(hue,sat,m),bg)>=10)lo=m; else hi=m;}
+    dL=lo;
+  } else dL=0;
+  if(lightOK){
+    let lo=60,hi=100;
+    for(let i=0;i<14;i++){const m=(lo+hi)/2; if(contrast(hslToHex(hue,sat,m),bg)>=10)hi=m; else lo=m;}
+    lL=hi;
+  } else lL=100;
+  const dhex=hslToHex(hue,sat,dL), lhex=hslToHex(hue,sat,lL);
+  return contrast(dhex,bg)>=contrast(lhex,bg)?dhex:lhex;
+}
+
+function derivePalette(p,sch){
+  const {h,s,l}=hexToHsl(p);
+  const main=p;
+  const bg=hslToHex(h,s*0.22,92);
+  const accent=accentOf(p,sch);
+  const bgText=textOn(bg,h,Math.min(s*0.9,92));
+  const mainText=textOn(main,h,Math.min(s*0.9,92));
+  const {h:acH,s:acS}=hexToHsl(accent);
+  const accentText=textOn(accent,acH,Math.min(acS*0.9,92));
+  return [bgText,mainText,accentText,bg,main,accent];
+}
+
+/* ============ 第二层映射：6 个色块 → 预览区 ============ */
+function applyTheme(blk){
+  const [bgText,mainText,accentText,bg,main,accent]=blk;
+  document.querySelectorAll(".slide").forEach(s=>s.style.background=bg);
+  const navA=$("navA");
+  navA.style.background=main; navA.style.color=mainText;
+  navA.querySelectorAll(".nav-item").forEach(it=>{it.style.background=accent;it.style.color=accentText;});
+  const sc=document.querySelector("#slideA .shape-card");
+  sc.style.border="none"; sc.style.background=main; sc.style.color=mainText;
+  sc.querySelector(".pill").style.background=accent; sc.querySelector(".pill").style.color=accentText;
+  const bc=document.querySelector("#slideA .box-card");
+  bc.style.border="2px dashed "+main; bc.style.background="transparent"; bc.style.color=bgText;
+  bc.querySelector(".pill").style.background=main; bc.querySelector(".pill").style.color=mainText;
+  $("slideA").querySelector(".footer").style.background=main;
+  $("slideA").querySelector(".footer").style.color=mainText;
+  const cv=$("slideB");
+  cv.querySelector("h2").style.color=bgText;
+  cv.querySelector(".sub2").style.color=bgText;
+  cv.querySelector(".blob").style.background=accent;
+  const sp=$("slideC");
+  sp.querySelector(".aside").style.background=main;
+  sp.querySelector(".aside").style.color=mainText;
+  sp.querySelector(".aside .pill").style.background=accent;
+  sp.querySelector(".aside .pill").style.color=accentText;
+  sp.querySelector(".main .pill").style.background=main;
+  sp.querySelector(".main .pill").style.color=mainText;
+  sp.querySelectorAll(".main .line").forEach(x=>x.style.background=accent);
+}
+
+/* ============ 渲染 & 同步 ============ */
+let lastCopy=0;
+function copySlot(i){
+  const hex=blocks[i].toUpperCase();
+  lastCopy=Date.now();
+  if(navigator.clipboard)navigator.clipboard.writeText(hex).catch(()=>{});
+  toast("已复制 "+hex);
+}
+/* 色块内的角色名文字色：按色块底色取可读色 */
+function labelColor(c){
+  const {h,s}=hexToHsl(c);
+  return textOn(c,h,Math.min(s*0.9,92));
+}
+function renderSlots(){
+  const pairs=[[0,blocks[3]],[1,blocks[4]],[2,blocks[5]]]; // 文字色 与 各自底色
+  $("slots").innerHTML=blocks.map((c,i)=>
+    `<div class="slot" data-i="${i}"><div class="chip" style="background:${c};color:${labelColor(c)}">
+       <div class="c-role">${ROLES[i]}</div><div class="c-hex">${c.toUpperCase()}</div>
+       ${i<3?contrastBadge(blocks[i],pairs[i][1]):""}
+     </div></div>`).join("");
+  document.querySelectorAll(".slot").forEach(el=>{
+    const i=+el.dataset.i;
+    /* 左键 / 短按：打开调色板 */
+    el.onclick=()=>{ if(Date.now()-lastCopy<500) return; openPicker(i); };
+    /* 右键：复制色号 */
+    el.oncontextmenu=e=>{ e.preventDefault(); copySlot(i); };
+    /* 触屏长按：复制色号 */
+    let timer=null;
+    el.addEventListener("pointerdown",e=>{
+      if(e.pointerType==="mouse") return;
+      timer=setTimeout(()=>{ copySlot(i); if(navigator.vibrate)navigator.vibrate(15); },520);
+    });
+    ["pointerup","pointercancel","pointerleave"].forEach(ev=>
+      el.addEventListener(ev,()=>{ if(timer){clearTimeout(timer);timer=null;} },{passive:true})
+    );
+  });
+}
+function contrastBadge(fg,bg){
+  const r=contrast(fg,bg);
+  const ok=r>=10;
+  return `<div class="c-ctr">对比 ${r.toFixed(1)}${ok?" ✓":" <10"}</div>`;
+}
+/* 方案面板：每格为上主色/下点缀色的双色方块 */
+const BASES=[["mono","单色渐变"],["analogous","类似色"],["triadic","三角色"],["split","分裂互补"]];
+const STRE=[["neg2","负向浓"],["neg1","负向"],["mid","标准"],["pos1","正向"],["pos2","正向浓"]];
+function renderScheme(){
+  const p=$("schemePanel");p.innerHTML="";
+  BASES.forEach(([base,label])=>{
+    const g=document.createElement("div");g.className="sg";
+    const lab=document.createElement("div");lab.className="sg-label";lab.textContent=label;
+    const cells=document.createElement("div");cells.className="sg-cells";
+    STRE.forEach(([st,sname])=>{
+      const v=base+"-"+st;
+      const acc=accentOf(primary,v);
+      const c=document.createElement("div");c.className="scell"+(v===scheme?" active":"");
+      c.dataset.v=v;
+      c.innerHTML=`<div class="two"><i class="top" style="background:${primary}"></i><i class="bot" style="background:${acc}"></i></div>
+                   <div class="sname">${sname}</div>`;
+      c.onclick=()=>{scheme=v;closePop("schemePop");sync();toast("方案："+schemeLabel(v));};
+      cells.appendChild(c);
+    });
+    g.appendChild(lab);g.appendChild(cells);p.appendChild(g);
+  });
+}
+function sync(){
+  blocks=derivePalette(primary,scheme);
+  $("bigSwatch").style.background=primary;
+  updateSchemeTag();
+  renderSlots(); renderScheme(); applyTheme(blocks);
+}
+
+/* ============ 配色方案 / 历史 弹窗 ============ */
+function updateSchemeTag(){ $("schemeTag").textContent=schemeLabel(scheme); }
+function closePop(id){ $(id).classList.remove("show"); }
+function openPop(id){
+  ["schemePop","historyPop","importPop","pickerPop"].forEach(p=>{ if(p!==id) $(p).classList.remove("show"); });
+  $(id).classList.add("show");
+}
+$("schemeBtn").onclick=()=>{
+  if($("schemePop").classList.contains("show")) closePop("schemePop");
+  else { renderScheme(); openPop("schemePop"); }
+};
+$("historyBtn").onclick=()=>{
+  if($("historyPop").classList.contains("show")) closePop("historyPop");
+  else { renderHistory(); openPop("historyPop"); }
+};
+$("schemeClose").onclick=()=>closePop("schemePop");
+$("historyClose").onclick=()=>closePop("historyPop");
+document.addEventListener("click",e=>{
+  ["schemePop","historyPop"].forEach(id=>{
+    if($(id).classList.contains("show")&&!$(id).contains(e.target)&&!e.target.closest("#schemeBtn")&&!e.target.closest("#historyBtn")) closePop(id);
+  });
+});
+
+/* ============ 取色器 ============ */
+let editing=-1,curH=210,curS=50,curV=50;
+function openPicker(i){
+  editing=i;const {h,s,l}=hexToHsl(blocks[i]);const {s:vs,v}=hslToHsv(h,s,l);curH=h;curS=vs;curV=v;
+  $("pickerTitle").textContent="修改色块："+ROLES[i];
+  syncPickerUI(); $("pickerPop").classList.add("show");
+}
+function closePicker(){$("pickerPop").classList.remove("show");editing=-1;}
+function syncPickerUI(){
+  const {s:sl,l}=hsvToHsl(curH,curS,curV),hex=hslToHex(curH,sl,l);
+  $("svPad").style.background=`linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(${curH},100%,50%))`;
+  $("svThumb").style.left=curS+"%"; $("svThumb").style.top=(100-curV)+"%";
+  $("hueSlider").value=Math.round(curH);
+  $("pickerPreview").style.background=hex; $("hexInput").value=hex.toUpperCase();
+  blocks[editing]=hex;
+  if(editing===4){primary=hex;blocks=derivePalette(primary,scheme);$("bigSwatch").style.background=primary;renderScheme();}
+  renderSlots(); applyTheme(blocks);
+}
+function svFromEvent(e){
+  const r=$("svPad").getBoundingClientRect();
+  const cx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+  const cy=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+  curS=Math.max(0,Math.min(100,cx/r.width*100));
+  curV=Math.max(0,Math.min(100,100-cy/r.height*100));
+  syncPickerUI();
+}
+$("svPad").addEventListener("pointerdown",e=>{
+  e.preventDefault();svFromEvent(e);
+  const m=ev=>svFromEvent(ev),u=()=>{window.removeEventListener("pointermove",m);window.removeEventListener("pointerup",u);};
+  window.addEventListener("pointermove",m);window.addEventListener("pointerup",u);
+});
+$("hueSlider").oninput=e=>{curH=+e.target.value;syncPickerUI();};
+$("hexInput").onchange=e=>{let v=e.target.value.trim();if(!v.startsWith("#"))v="#"+v;
+  if(/^#[0-9a-fA-F]{6}$/.test(v)){const {h,s,l}=hexToHsl(v);const {s:vs,vv}=hslToHsv(h,s,l);curH=h;curS=vs;curV=vv;syncPickerUI();}};
+$("pickerClose").onclick=()=>{closePicker();autoSave();};
+document.addEventListener("click",e=>{
+  if(editing<0)return;
+  if($("pickerPop").contains(e.target)||e.target.closest(".chip")||e.target.closest(".big-swatch"))return;
+  closePicker(); autoSave();
+});
+$("bigSwatch").onclick=()=>openPicker(4);
+/* 主色变化时方案面板预览需同步刷新 */
+
+/* 版式切换 */
+$("layoutSwitch").addEventListener("click",e=>{
+  const b=e.target.closest(".lay-btn");if(!b)return;
+  document.querySelectorAll(".lay-btn").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  ["A","B","C"].forEach(k=>$("slide"+k).hidden = k!==b.dataset.lay);
+});
+
+/* ============ 色卡 ============ */
+const PRESETS=[
+  {label:"中国色",colors:[
+    ["朱砂","#C3272B"],["胭脂","#9D2933"],["黛蓝","#4C526B"],["月白","#D6E4EC"],
+    ["竹青","#789262"],["琥珀","#CA6924"],["藤黄","#FFB11B"],["青瓷","#8B9D83"],
+    ["玄色","#2E2E2E"],["牙白","#F3F3E8"],["赭石","#8C4A2F"],["天青","#7EB6C9"]]},
+  {label:"标准色",colors:[
+    ["红","#E74C3C"],["橙","#E67E22"],["黄","#F1C40F"],["绿","#27AE60"],
+    ["青","#16A085"],["蓝","#2980B9"],["紫","#8E44AD"],["灰","#95A5A6"]]},
+  {label:"莫兰迪",colors:[
+    ["灰粉","#D4B5B0"],["燕麦","#C9B8A3"],["雾霾蓝","#8CA0B5"],["鼠尾草","#A3A380"],
+    ["灰绿","#9CAF88"],["陶土","#B5836B"],["灰紫","#9B8AA0"],["米灰","#D6D0C4"]]},
+  {label:"马卡龙",colors:[
+    ["粉","#FFB7C5"],["黄","#FFE66D"],["绿","#B5E6A2"],["蓝","#A0D8EF"],
+    ["紫","#D4B5F0"],["橙","#FFC8A2"],["薄荷","#A8E6CF"],["薰衣草","#C9B8FF"]]},
+  {label:"大地色",colors:[
+    ["驼","#C8A97E"],["棕","#8B6F47"],["卡其","#B8A98A"],["奶油","#F2E8D5"],
+    ["胡桃","#6B4F3A"],["亚麻","#E6DCC8"],["赤陶","#C17A54"],["橄榄","#7A7A52"]]}
+];
+
+/* 自定义色 */
+function loadCustom(){try{return JSON.parse(localStorage.getItem("customColors"))||[];}catch(e){return[];}}
+let customColors=loadCustom();
+function saveCustom(){localStorage.setItem("customColors",JSON.stringify(customColors));}
+function renderPresets(){
+  const box=$("presets");box.innerHTML="";
+  const groups=[{label:"自定义",colors:customColors.map(c=>["",c])},...PRESETS];
+  groups.forEach(g=>{
+    if(g.label==="自定义"&&!g.colors.length)return;
+    const lab=document.createElement("div");lab.className="p-label";lab.textContent=g.label;box.appendChild(lab);
+    g.colors.forEach(([name,hex])=>{
+      const c=document.createElement("div");c.className="pc";c.style.background=hex;c.title=(name?name+" ":"")+hex;
+      c.onclick=()=>{const {h,s,l}=hexToHsl(hex);const {s:vs,v}=hslToHsv(h,s,l);curH=h;curS=vs;curV=v;syncPickerUI();};
+      box.appendChild(c);
+    });
+  });
+}
+renderPresets();
+
+/* 导入面板 */
+function renderCustomList(){
+  const box=$("customList");box.innerHTML="";
+  if(!customColors.length){box.innerHTML='<div class="history-empty">还没有自定义色。</div>';return;}
+  customColors.forEach((hex,idx)=>{
+    const row=document.createElement("div");row.className="custom-row";
+    row.innerHTML=`<span class="sw" style="background:${hex}"></span><span class="hx">${hex.toUpperCase()}</span>`;
+    const del=document.createElement("button");del.className="del";del.textContent="×";
+    del.onclick=()=>{customColors.splice(idx,1);saveCustom();renderCustomList();renderPresets();};
+    row.appendChild(del);box.appendChild(row);
+  });
+}
+$("importBtn").onclick=()=>{$("importPop").classList.add("show");renderCustomList();};
+$("importClose").onclick=()=>$("importPop").classList.remove("show");
+$("importInput").onchange=e=>{
+  const codes=e.target.value.match(/#?[0-9a-fA-F]{6}\b/g)||[];
+  codes.map(c=>c.startsWith("#")?c:"#"+c).forEach(c=>{if(!customColors.includes(c))customColors.push(c);});
+  saveCustom();renderCustomList();renderPresets();e.target.value="";toast("已导入 "+codes.length+" 个色号");
+};
+
+/* ============ 历史 ============ */
+function loadList(){try{return JSON.parse(localStorage.getItem("colorSchemes"))||[];}catch(e){return[];}}
+function schemeLabel(s){
+  const [base,st]=s?String(s).split("-"):["",""];
+  const baseName={mono:"单色渐变",split:"分裂互补",analogous:"类似色",triadic:"三角色"}[base]||base;
+  const stName={neg2:"负向浓",neg1:"负向",mid:"标准",pos1:"正向",pos2:"正向浓",soft:"柔和",strong:"浓烈"}[st]||"";
+  return baseName+(stName?"·"+stName:"");
+}
+$("clearHistory").onclick=()=>{localStorage.removeItem("colorSchemes");renderHistory();toast("已清空历史");};
+function autoSave(){
+  const list=loadList();
+  const last=list[list.length-1];
+  if(last && last.primary===primary && last.scheme===scheme && JSON.stringify(last.blocks)===JSON.stringify(blocks)) return;
+  list.push({primary,scheme,blocks:[...blocks]});
+  localStorage.setItem("colorSchemes",JSON.stringify(list));
+  renderHistory();
+}
+$("exportBtn").onclick=()=>{
+  const data={primary,scheme,blocks:Object.fromEntries(ROLES.map((r,i)=>[r,blocks[i]]))};
+  const text=JSON.stringify(data,null,2);
+  if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>toast("已导出并复制")).catch(()=>toast("已导出"));
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:"application/json"}));a.download="配色方案.json";a.click();
+};
+function renderHistory(){
+  const list=loadList(),box=$("historyList");box.innerHTML="";
+  $("historyCount").textContent=list.length?`(${list.length})`:"";
+  if(!list.length){box.innerHTML='<div class="history-empty">选一次主色或切一次方案，会自动存一条记录。</div>';return;}
+  list.forEach((item,idx)=>{
+    const row=document.createElement("div");row.className="history-item";
+    row.innerHTML=`<div class="mini">${item.blocks.map(c=>`<span style="background:${c}"></span>`).join("")}</div>
+      <span class="hname">方案 ${idx+1}</span><span class="htag">${schemeLabel(item.scheme)}</span>`;
+    const del=document.createElement("button");del.className="del";del.textContent="×";
+    del.onclick=e=>{e.stopPropagation();const l=loadList();l.splice(idx,1);localStorage.setItem("colorSchemes",JSON.stringify(l));renderHistory();};
+    row.onclick=()=>{primary=item.primary;scheme=item.scheme;sync();toast("已还原：方案 "+(idx+1));};
+    row.appendChild(del);box.appendChild(row);
+  });
+}
+let toastTimer;
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),1600);}
+
+sync();renderHistory();
+</script>
+</body>
+</html>

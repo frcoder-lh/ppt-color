@@ -1,0 +1,14 @@
+# 内部临时与备份目录（不属于发布内容）
+_backup/
+_shots/
+_popup_check/
+
+# 用户本地副本
+*副本*.html
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 临时脚本
+_*.py

@@ -1,4 +1,4 @@
-# [PPT 配色方案生成器](https://github.com/你的用户名/ppt-color)
+# [PPT 配色方案生成器](https://github.com/frcoder-lh/ppt-color)
 
 ![banner](https://img.shields.io/badge/PPT%20配色方案生成器-PPT%20Color%20Scheme%20Generator-3a6ea5)
 
